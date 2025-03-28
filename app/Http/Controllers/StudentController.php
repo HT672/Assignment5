@@ -10,8 +10,10 @@ class StudentController extends Controller
     // Display a list of students
     public function index()
     {
-        $students = Student::all(); // Later: add filtering logic
-        return view('index', compact('students'));
+        if ($request->ajax()) {
+            return view('students.partials.table', ['students' => Student::all()]);
+        }
+        return view('students.index', ['students' => Student::all()]);
     }
 
     // Show the form to create a new student
@@ -35,6 +37,27 @@ class StudentController extends Controller
 
         return redirect()->route('index')->with('success', 'Student added successfully!');
     }
+
+    public function search(Request $request) {
+        $query = $request->input('query');
+        $students = Student::where('name', 'LIKE', "%$query%")->get();
+        return view('students.partials.table', compact('students'));
+    }
+
+    public function filter(Request $request) {
+        $query = $request->input('query');
+        $minAge = $request->input('minAge');
+        $maxAge = $request->input('maxAge');
+    
+        $students = Student::where('name', 'LIKE', "%$query%")
+                           ->when($minAge, fn($q) => $q->where('age', '>=', $minAge))
+                           ->when($maxAge, fn($q) => $q->where('age', '<=', $maxAge))
+                           ->get();
+    
+        return view('students.partials.table', compact('students'));
+    }
+    
+    
 
     public function show($id) {}
     public function edit($id) {}
